@@ -1,10 +1,10 @@
-# Go Fiber v3 Clean Architecture Template
+# Go Fiber v2 Clean Architecture Template
 
-A production-ready REST API template built with Go Fiber v3, GORM, and JWT. This project follows Clean Architecture and Domain-Driven Design (DDD) principles.
+A production-ready REST API template built with Go Fiber v2, GORM, and JWT. This project follows Clean Architecture and Domain-Driven Design (DDD) principles.
 
 ## Features
 
-- **Framework**: [Go Fiber v3](https://github.com/gofiber/fiber/v3) (Beta)
+- **Framework**: [Go Fiber v2](https://github.com/gofiber/fiber/v2)
 - **Database**: GORM with support for PostgreSQL and MySQL
 - **Authentication**: JWT-based auth with access/refresh token rotation
 - **Architecture**: Clean Architecture with Generic Base Repository
