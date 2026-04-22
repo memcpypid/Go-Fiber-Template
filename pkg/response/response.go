@@ -116,3 +116,18 @@ func SuccessWithPagination(message string, data interface{}, total int64, limit,
 		},
 	}
 }
+
+// SwaggerSuccess is used purely for Swagger documentation to hide the meta field
+type SwaggerSuccess struct {
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+// SwaggerPaginated is used purely for Swagger documentation to strict the meta field
+type SwaggerPaginated struct {
+	Success bool           `json:"success"`
+	Message string         `json:"message"`
+	Data    interface{}    `json:"data"`
+	Meta    PaginationMeta `json:"meta"`
+}

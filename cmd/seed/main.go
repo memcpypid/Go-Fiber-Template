@@ -31,7 +31,7 @@ func main() {
 
 	adminEmail := cfg.Admin.Email
 	if adminEmail == "" {
-		adminEmail = "admin@example.com"
+		adminEmail = "admin@mail.com"
 	}
 	adminPassword := cfg.Admin.Password
 	if adminPassword == "" {
@@ -50,7 +50,7 @@ func main() {
 
 	user := entity.User{
 		Name:       "Normal User",
-		Email:      "user@example.com",
+		Email:      "user@mail.com",
 		Password:   password,
 		Role:       "user",
 		IsVerified: true,

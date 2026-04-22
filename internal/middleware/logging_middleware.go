@@ -18,6 +18,7 @@ func (m *Middleware) LoggingMiddleware() fiber.Handler {
 		duration := time.Since(start)
 
 		m.logger.Info("HTTP Request",
+			zap.String("request_id", c.Get("X-Request-ID")),
 			zap.String("method", c.Method()),
 			zap.String("path", c.Path()),
 			zap.Int("status", c.Response().StatusCode()),

@@ -9,14 +9,16 @@ import (
 type Config struct {
 	App      AppConfig
 	Database DatabaseConfig
+	Redis    RedisConfig
 	JWT      JWTConfig
 	Admin    AdminConfig
 }
 
 type AppConfig struct {
-	Env  string `mapstructure:"APP_ENV"`
-	Port int    `mapstructure:"APP_PORT"`
-	Name string `mapstructure:"APP_NAME"`
+	Env        string `mapstructure:"APP_ENV"`
+	Port       int    `mapstructure:"APP_PORT"`
+	Name       string `mapstructure:"APP_NAME"`
+	Showroutes bool   `mapstructure:"APP_SHOW_ROUTES"`
 }
 
 type DatabaseConfig struct {
@@ -27,6 +29,13 @@ type DatabaseConfig struct {
 	Pass    string `mapstructure:"DB_PASS"`
 	Name    string `mapstructure:"DB_NAME"`
 	SSLMode string `mapstructure:"DB_SSLMODE"`
+}
+
+type RedisConfig struct {
+	Host     string `mapstructure:"REDIS_HOST"`
+	Port     int    `mapstructure:"REDIS_PORT"`
+	Password string `mapstructure:"REDIS_PASSWORD"`
+	DB       int    `mapstructure:"REDIS_DB"`
 }
 
 type JWTConfig struct {
@@ -59,6 +68,10 @@ func NewConfig(v *viper.Viper) (*Config, error) {
 	v.BindEnv("APP_ENV")
 	v.BindEnv("APP_PORT")
 	v.BindEnv("APP_NAME")
+	v.BindEnv("REDIS_HOST")
+	v.BindEnv("REDIS_PORT")
+	v.BindEnv("REDIS_PASSWORD")
+	v.BindEnv("REDIS_DB")
 	v.BindEnv("DB_DRIVER")
 	v.BindEnv("DB_HOST")
 	v.BindEnv("DB_PORT")
@@ -78,6 +91,9 @@ func NewConfig(v *viper.Viper) (*Config, error) {
 	if err := v.Unmarshal(&cfg.Database); err != nil {
 		return nil, err
 	}
+	if err := v.Unmarshal(&cfg.Redis); err != nil {
+		return nil, err
+	}
 	if err := v.Unmarshal(&cfg.JWT); err != nil {
 		return nil, err
 	}
@@ -88,6 +104,9 @@ func NewConfig(v *viper.Viper) (*Config, error) {
 	// Set defaults
 	if cfg.App.Port == 0 {
 		cfg.App.Port = 8080
+	}
+	if cfg.Redis.Port == 0 && cfg.Redis.Host != "" {
+		cfg.Redis.Port = 6379
 	}
 	if cfg.JWT.Secret == "" {
 		cfg.JWT.Secret = "default_secret_key"

@@ -1,77 +1,87 @@
 package route
 
 import (
+	"go-fiber-template/internal/config"
 	"go-fiber-template/internal/delivery/http/handler"
 	"go-fiber-template/internal/middleware"
-	"go-fiber-template/pkg/response"
+
+	"go-fiber-template/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+	"github.com/gofiber/swagger"
 )
 
 type Router struct {
-	mw          *middleware.Middleware
-	authHandler *handler.AuthHandler
-	userHandler *handler.UserHandler
+	cfg           *config.Config
+	mw            *middleware.Middleware
+	authHandler   *handler.AuthHandler
+	userHandler   *handler.UserHandler
+	healthHandler *handler.HealthHandler
 }
 
 func NewRouter(
+	cfg *config.Config,
 	mw *middleware.Middleware,
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
+	healthHandler *handler.HealthHandler,
 ) *Router {
 	return &Router{
-		mw:          mw,
-		authHandler: authHandler,
-		userHandler: userHandler,
+		cfg:           cfg,
+		mw:            mw,
+		authHandler:   authHandler,
+		userHandler:   userHandler,
+		healthHandler: healthHandler,
 	}
 }
 
 func (r *Router) New() *fiber.App {
 	app := fiber.New(fiber.Config{
-		AppName:           "Go Fiber Clean Architecture",
-		EnablePrintRoutes: true,
+		AppName:           r.cfg.App.Name,
+		EnablePrintRoutes: r.cfg.App.Showroutes,
+		ErrorHandler:      utils.GlobalErrorHandler,
 	})
 
 	// Global middleware
 	if r.mw != nil {
-		app.Use(r.mw.CORSMiddleware())
+		app.Use(requestid.New())
 		app.Use(r.mw.LoggingMiddleware())
+		app.Use(r.mw.HelmetMiddleware())
+		app.Use(r.mw.CORSMiddleware())
+		app.Use(r.mw.LimiterMiddleware())
+		app.Use(r.mw.CSRFMiddleware())
+		// Global Casbin RBAC can be added here if needed: app.Use(r.mw.CasbinMiddleware())
 	}
 
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(response.Success("server is healthy", nil))
-	})
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	api := app.Group("/api/v1")
-
+	// Public: Health Check
+	api.Get("/health", r.healthHandler.HealthCheck)
 	// Auth Routes
 	auth := api.Group("/auth")
-	{
-		auth.Post("/register", r.authHandler.Register)
-		auth.Post("/login", r.authHandler.Login)
-		auth.Post("/refresh", r.authHandler.RefreshToken)
-		auth.Post("/logout", r.authHandler.Logout)
-	}
+	auth.Post("/register", r.authHandler.Register)
+	auth.Post("/login", r.authHandler.Login)
+	auth.Post("/refresh", r.authHandler.RefreshToken)
+	auth.Post("/logout", r.authHandler.Logout)
 
-	// Protected Routes
-	protected := api.Group("/")
-	protected.Use(r.mw.AuthMiddleware())
-	{
-		protected.Get("/users/me", r.userHandler.GetProfile)
-		protected.Put("/users/me", r.userHandler.UpdateProfile)
+	// Protected: Users
+	users := api.Group("/users", r.mw.AuthMiddleware(), r.mw.CasbinMiddleware())
+	users.Get("/me", r.userHandler.GetProfile)
+	users.Put("/me", r.userHandler.UpdateProfile)
 
-		// Admin Only Routes
-		admin := protected.Group("/users")
-		admin.Use(r.mw.RoleMiddleware("admin"))
-		{
-			admin.Get("", r.userHandler.GetUsers)
-			admin.Get("/count", r.userHandler.GetUserCount)
-			admin.Put("/:id", r.userHandler.UpdateUser)
-			admin.Delete("/:id", r.userHandler.DeleteUser)
-			admin.Patch("/:id/activate", r.userHandler.ActivateAccount)
-			admin.Patch("/:id/deactivate", r.userHandler.DeactivateAccount)
-		}
-	}
+	// Admin Only: Users Management
+	admin := api.Group("/users", r.mw.AuthMiddleware(), r.mw.RoleMiddleware("admin"), r.mw.CasbinMiddleware())
+	admin.Get("", r.userHandler.GetUsers)
+	admin.Get("/:id", r.userHandler.GetUserByID)
+	admin.Get("/user/count", r.userHandler.GetUserCount)
+	admin.Put("/:id", r.userHandler.UpdateUser)
+	admin.Delete("/:id", r.userHandler.DeleteUser)
+	admin.Patch("/:id/activate", r.userHandler.ActivateAccount)
+	admin.Patch("/:id/deactivate", r.userHandler.DeactivateAccount)
 
+	// 404 Handler
+	app.Use(r.mw.NotFoundRouteMiddleware())
 	return app
 }

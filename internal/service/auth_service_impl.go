@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"go-fiber-template/internal/config"
 	"go-fiber-template/internal/dto"
 	"go-fiber-template/internal/entity"
@@ -10,6 +9,7 @@ import (
 	"go-fiber-template/internal/utils"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -36,16 +36,21 @@ func (s *authServiceImpl) Login(ctx context.Context, req *dto.LoginRequest) (*dt
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		s.logger.Error("Service: Login database error", zap.Error(err), zap.String("email", req.Email))
-		return nil, errors.New("invalid credentials")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "invalid credentials")
 	}
 	if user == nil {
 		s.logger.Warn("Service: Login user not found", zap.String("email", req.Email))
-		return nil, errors.New("invalid credentials")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "invalid credentials")
 	}
 
 	if !utils.CheckPasswordHash(req.Password, user.Password) {
 		s.logger.Warn("Service: Login password mismatch", zap.String("email", req.Email))
-		return nil, errors.New("invalid credentials")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "invalid credentials")
+	}
+
+	if !user.IsVerified {
+		s.logger.Warn("Service: Login user not verified", zap.String("email", req.Email))
+		return nil, utils.NewError(fiber.StatusUnauthorized, "account not verified")
 	}
 
 	accessToken, err := utils.GenerateJWT(user.ID, user.Role, s.cfg.JWT.Secret, s.cfg.JWT.Expiration)
@@ -86,7 +91,7 @@ func (s *authServiceImpl) Register(ctx context.Context, req *dto.RegisterRequest
 	existingUser, _ := s.userRepo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		s.logger.Warn("Service: Registration email already exists", zap.String("email", req.Email))
-		return nil, errors.New("email already exists")
+		return nil, utils.NewError(fiber.StatusConflict, "email already exists")
 	}
 
 	hashedPassword, err := utils.HashPassword(req.Password)
@@ -94,7 +99,7 @@ func (s *authServiceImpl) Register(ctx context.Context, req *dto.RegisterRequest
 		s.logger.Error("Service: Registration password hash failed", zap.Error(err))
 		return nil, err
 	}
-	
+
 	user := &entity.User{
 		Name:     req.Name,
 		Email:    req.Email,
@@ -118,18 +123,18 @@ func (s *authServiceImpl) RefreshToken(ctx context.Context, req *dto.RefreshToke
 	claims, err := utils.ValidateJWT(req.RefreshToken, s.cfg.JWT.Secret)
 	if err != nil {
 		s.logger.Warn("Service: Invalid refresh token provided", zap.Error(err))
-		return nil, errors.New("invalid token")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
 
 	rt, err := s.tokenRepo.FindByToken(ctx, req.RefreshToken)
 	if err != nil || rt == nil {
 		s.logger.Warn("Service: Refresh token not found in database")
-		return nil, errors.New("token not found or revoked")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "token not found or revoked")
 	}
 
 	if rt.RevokedAt != nil || rt.ExpiresAt.Before(time.Now()) {
 		s.logger.Warn("Service: Refresh token expired or revoked")
-		return nil, errors.New("token expired or revoked")
+		return nil, utils.NewError(fiber.StatusUnauthorized, "token expired or revoked")
 	}
 
 	userIDStr, _ := claims["sub"].(string)
@@ -140,13 +145,13 @@ func (s *authServiceImpl) RefreshToken(ctx context.Context, req *dto.RefreshToke
 	newRefreshToken, _ := utils.GenerateJWT(userID, role, s.cfg.JWT.Secret, s.cfg.JWT.RefreshExpiration)
 
 	expiredDuration, _ := time.ParseDuration(s.cfg.JWT.RefreshExpiration)
-	
+
 	newRT := &entity.RefreshToken{
 		Token:     newRefreshToken,
 		UserID:    userID,
 		ExpiresAt: time.Now().Add(expiredDuration),
 	}
-	
+
 	if err := s.tokenRepo.Create(ctx, newRT); err != nil {
 		s.logger.Error("Service: Failed to store new refresh token", zap.Error(err))
 		return nil, err
@@ -168,13 +173,13 @@ func (s *authServiceImpl) Logout(ctx context.Context, token string) error {
 	rt, err := s.tokenRepo.FindByToken(ctx, token)
 	if err != nil || rt == nil {
 		s.logger.Warn("Service: Logout token not found")
-		return errors.New("token not found")
+		return utils.NewError(fiber.StatusUnauthorized, "token not found")
 	}
-	
+
 	now := time.Now()
 	rt.RevokedAt = &now
 	_ = s.tokenRepo.Update(ctx, rt)
-	
+
 	err = s.tokenRepo.Delete(ctx, rt.ID)
 	if err != nil {
 		s.logger.Error("Service: Logout token deletion failed", zap.Error(err))

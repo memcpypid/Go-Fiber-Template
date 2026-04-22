@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"go-fiber-template/internal/dto"
 	"go-fiber-template/internal/entity"
 	"go-fiber-template/internal/repository"
 	"go-fiber-template/internal/utils"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -31,7 +31,7 @@ func (s *userServiceImpl) Create(ctx context.Context, req *dto.CreateUserRequest
 	existingUser, _ := s.userRepo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		s.logger.Warn("Service: Email already exists", zap.String("email", req.Email))
-		return nil, errors.New("email already registered")
+		return nil, utils.NewError(fiber.StatusConflict, "email already registered")
 	}
 
 	hash, err := utils.HashPassword(req.Password)
@@ -67,7 +67,7 @@ func (s *userServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (*dto.UserR
 	}
 	if user == nil {
 		s.logger.Warn("Service: User not found", zap.String("user_id", id.String()))
-		return nil, errors.New("user not found")
+		return nil, utils.NewError(fiber.StatusNotFound, "user not found")
 	}
 
 	res := dto.ToUserResponse(user)
@@ -101,7 +101,7 @@ func (s *userServiceImpl) Update(ctx context.Context, id uuid.UUID, req *dto.Upd
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil || user == nil {
 		s.logger.Warn("Service: User not found for update", zap.String("user_id", id.String()))
-		return nil, errors.New("user not found")
+		return nil, utils.NewError(fiber.StatusNotFound, "user not found")
 	}
 
 	if req.Name != "" {
@@ -143,7 +143,7 @@ func (s *userServiceImpl) ActivateAccount(ctx context.Context, id uuid.UUID) err
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil || user == nil {
 		s.logger.Warn("Service: User not found for activation", zap.String("user_id", id.String()))
-		return errors.New("user not found")
+		return utils.NewError(fiber.StatusNotFound, "user not found")
 	}
 
 	user.IsVerified = true
@@ -161,7 +161,7 @@ func (s *userServiceImpl) DeactivateAccount(ctx context.Context, id uuid.UUID) e
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil || user == nil {
 		s.logger.Warn("Service: User not found for deactivation", zap.String("user_id", id.String()))
-		return errors.New("user not found")
+		return utils.NewError(fiber.StatusNotFound, "user not found")
 	}
 
 	user.IsVerified = false
