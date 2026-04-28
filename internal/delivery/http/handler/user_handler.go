@@ -46,8 +46,9 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, "Failed to fetch users", response.ErrorDetail{Field: "server", Message: err.Error()}))
 	}
 
-	return c.JSON(response.SuccessWithPagination("Users retrieved successfully", users, total, pagination.Limit, pagination.Page))
+	return c.JSON(response.SuccessWithPagination("Users retrieved successfully", users, fiber.StatusOK, total, pagination.Limit, pagination.Page))
 }
+
 // @Summary Get user by ID
 // @Description Fetch a specific user by their ID
 // @Tags Users
@@ -69,8 +70,9 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 		statusCode := utils.GetStatusCode(err)
 		return c.Status(statusCode).JSON(response.Error(statusCode, "Failed to fetch user", response.ErrorDetail{Field: "server", Message: err.Error()}))
 	}
-	return c.JSON(response.Success("User retrieved successfully", user))
+	return c.JSON(response.Success("User retrieved successfully", fiber.StatusOK, user))
 }
+
 // @Summary Get user count
 // @Description Fetch total number of users
 // @Tags Users
@@ -86,7 +88,7 @@ func (h *UserHandler) GetUserCount(c *fiber.Ctx) error {
 		statusCode := utils.GetStatusCode(err)
 		return c.Status(statusCode).JSON(response.Error(statusCode, "Failed to fetch user count", response.ErrorDetail{Field: "server", Message: err.Error()}))
 	}
-	return c.JSON(response.Success("User count retrieved successfully", count))
+	return c.JSON(response.Success("User count retrieved successfully", fiber.StatusOK, count))
 }
 
 // @Summary Get user profile
@@ -115,7 +117,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, "User not found"))
 	}
 
-	return c.JSON(response.Success("Profile retrieved successfully", user))
+	return c.JSON(response.Success("Profile retrieved successfully", fiber.StatusOK, user))
 }
 
 // @Summary Update user profile
@@ -160,7 +162,7 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Profile updated successfully", user))
+	return c.JSON(response.Success("Profile updated successfully", fiber.StatusOK, user))
 }
 
 // @Summary Update user by ID
@@ -196,7 +198,7 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("User updated successfully", user))
+	return c.JSON(response.Success("User updated successfully", fiber.StatusOK, user))
 }
 
 // @Summary Delete user
@@ -222,7 +224,7 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, "Failed to delete user", response.ErrorDetail{Field: "server", Message: err.Error()}))
 	}
 
-	return c.JSON(response.Success("User deleted successfully", nil))
+	return c.JSON(response.Success("User deleted successfully", fiber.StatusOK, nil))
 }
 
 // @Summary Activate user account
@@ -247,7 +249,7 @@ func (h *UserHandler) ActivateAccount(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Account activated successfully", nil))
+	return c.JSON(response.Success("Account activated successfully", fiber.StatusOK, nil))
 }
 
 // @Summary Deactivate user account
@@ -272,5 +274,5 @@ func (h *UserHandler) DeactivateAccount(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Account deactivated successfully", nil))
+	return c.JSON(response.Success("Account deactivated successfully", fiber.StatusOK, nil))
 }

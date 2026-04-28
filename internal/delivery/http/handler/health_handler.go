@@ -61,8 +61,8 @@ func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 	}
 
 	if status == "unhealthy" {
-		return c.Status(fiber.StatusServiceUnavailable).JSON(response.Success("Server is unhealthy", details))
+		return c.Status(fiber.StatusServiceUnavailable).JSON(response.Success("Server is unhealthy", fiber.StatusServiceUnavailable, details))
 	}
 
-	return c.JSON(response.Success("Server is healthy", details))
+	return c.JSON(response.Success("Server is healthy", fiber.StatusOK, details))
 }

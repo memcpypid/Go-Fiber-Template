@@ -1,13 +1,14 @@
 package handler
 
 import (
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
 	"go-fiber-template/internal/dto"
 	"go-fiber-template/internal/service"
 	"go-fiber-template/internal/utils"
 	"go-fiber-template/pkg/response"
+
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
 )
 
 type AuthHandler struct {
@@ -49,7 +50,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Login successful", resp))
+	return c.JSON(response.Success("Login successful", fiber.StatusOK, resp))
 }
 
 // @Summary Register User
@@ -77,7 +78,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(response.Success("Registration successful", resp))
+	return c.Status(fiber.StatusCreated).JSON(response.Success("Registration successful", fiber.StatusOK, resp))
 }
 
 // @Summary Refresh Token
@@ -101,7 +102,7 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Token refreshed", resp))
+	return c.JSON(response.Success("Token refreshed", fiber.StatusOK, resp))
 }
 
 // @Summary Logout User
@@ -125,5 +126,5 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		return c.Status(statusCode).JSON(response.Error(statusCode, err.Error()))
 	}
 
-	return c.JSON(response.Success("Logout successful", nil))
+	return c.JSON(response.Success("Logout successful", fiber.StatusOK, nil))
 }

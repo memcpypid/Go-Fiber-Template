@@ -20,7 +20,7 @@ func TestGenericHandlerResponse(t *testing.T) {
 
 	// Simulasi endpoint
 	app.Get("/ping", func(c *fiber.Ctx) error {
-		return c.JSON(response.Success("pong", map[string]string{"status": "ok"}))
+		return c.JSON(response.Success("pong", fiber.StatusOK, map[string]string{"status": "ok"}))
 	})
 
 	req := httptest.NewRequest("GET", "/ping", nil)
@@ -28,7 +28,7 @@ func TestGenericHandlerResponse(t *testing.T) {
 
 	// 1. Uji tanpa error
 	assert.NoError(t, err)
-	
+
 	// 2. Uji status kode adalah 200
 	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
 
@@ -36,7 +36,7 @@ func TestGenericHandlerResponse(t *testing.T) {
 	body, _ := io.ReadAll(resp.Body)
 	var responseBody response.SuccessResponse
 	err = json.Unmarshal(body, &responseBody)
-	
+
 	assert.NoError(t, err)
 	assert.True(t, responseBody.Success)
 	assert.Equal(t, "pong", responseBody.Message)
