@@ -17,7 +17,12 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load configuration: %v", err))
 	}
-
+	// Safety Check: Prevent running in production or staging
+	if cfg.App.Env == "production" || cfg.App.Env == "staging" {
+		fmt.Printf("\n[ABORTED] Perintah Refresh dilarang dijalankan di environment: %s\n", cfg.App.Env)
+		fmt.Println("Gunakan environment development untuk melakukan reset database.")
+		return
+	}
 	// 2. Initialize Logger
 	logger := config.NewLogger(cfg)
 	defer logger.Sync()

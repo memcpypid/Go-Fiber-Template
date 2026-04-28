@@ -18,7 +18,7 @@
 
 # Go workspace file
 go.work
-docs/*
+
 # IDEs
 .idea/
 .vscode/
@@ -27,9 +27,8 @@ docs/*
 *.DS_Store
 
 # Environment variables
+.env.*
 .env
-.env.local
-.env.*.local
 !.env.example
 
 # Logs
